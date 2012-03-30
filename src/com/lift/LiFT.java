@@ -16,6 +16,7 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Comparator;
 
 import org.jdesktop.swingx.JXTable;
 
@@ -40,6 +41,7 @@ public class LiFT {
 			            // Set System L&F
 			        UIManager.setLookAndFeel(
 			            UIManager.getSystemLookAndFeelClassName());
+			        UIManager.put("Button.defaultButtonFollowsFocus", Boolean.TRUE);
 			    } 
 			    catch (UnsupportedLookAndFeelException e) {
 			       // handle exception
@@ -125,7 +127,7 @@ public class LiFT {
 		gbc_qcBar.gridx = 0;
 		gbc_qcBar.gridy = 0;
 		frame.getContentPane().add(qcBar, gbc_qcBar);
-		
+		  
 		JLabel qcBarLabel = new JLabel("QuickConnect");
 		qcBar.add(qcBarLabel);
 		
@@ -183,7 +185,7 @@ public class LiFT {
 		Component rigidArea_4 = Box.createRigidArea(new Dimension(20, 20));
 		qcBar.add(rigidArea_4);
 		
-		JButton qcConnectButton = new JButton("Connect");
+		final JButton qcConnectButton = new JButton("Connect");
 		qcBar.add(qcConnectButton);
 		
 		Component rigidArea_5 = Box.createRigidArea(new Dimension(11, 20));
@@ -232,73 +234,86 @@ public class LiFT {
 		tManager = new ConnectionTabManager(connectionTabPane);
 		cManager = new ConnectionManager(tManager);
 		
-		
+		InputMap iMap = qcBar.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+		ActionMap aMap = qcBar.getActionMap();
+		iMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "enter");
+		aMap.put("enter", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				qcConnectButton.doClick();
+				connectButtonClick();
+			}
+		});
 		
 		qcConnectButton.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent event) {
-				String host = qcHost.getText().toString();
-				String port_string = qcPort.getText().toString();
-				int port = -1;
-				String user = qcUser.getText().toString();
-				String pass = qcPass.getText();
-				
-				try {
-					if(host.equals("")) {
-						JOptionPane.showMessageDialog(frame,
-								"The host provided is invalid",
-								"Invalid Parameter",
-								JOptionPane.ERROR_MESSAGE);
-						return;
-					}
-					else if(!InetAddress.getByName(host).isReachable(1000)) {
-						JOptionPane.showMessageDialog(frame,
-								"The host provided is not reachable",
-								"Invalid Parameter",
-								JOptionPane.ERROR_MESSAGE);
-						return;
-					}
-				} catch (HeadlessException e1) {
-					JOptionPane.showMessageDialog(frame,
-							"An unknown error occured connecting to the host",
-							"Invalid Parameter",
-							JOptionPane.ERROR_MESSAGE);
-					return;
-				} catch (UnknownHostException e1) {
-					JOptionPane.showMessageDialog(frame,
-							"The host provided is invalid",
-							"Invalid Parameter",
-							JOptionPane.ERROR_MESSAGE);
-					return;
-				} catch (IOException e1) {
-					JOptionPane.showMessageDialog(frame,
-							"An unknown error occured connecting to the host",
-							"Invalid Parameter",
-							JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				
-				if(!port_string.equals("")) {
-					try {
-						port = Integer.parseInt(port_string);
-					} catch(NumberFormatException e) {
-						JOptionPane.showMessageDialog(frame,
-								"The port provided is invalid",
-								"Invalid Parameter",
-								JOptionPane.ERROR_MESSAGE);
-						return;
-					}
-				}
-				
-				if(user.equals("")) {
-					user = "anonymous";
-				}
-				
-				clearQcFields();
-				
-				cManager.connect(host, port, user, pass);
+				connectButtonClick();
 			}
 		});
+	}
+	
+	public void connectButtonClick() {
+		String host = qcHost.getText().toString();
+		String port_string = qcPort.getText().toString();
+		int port = -1;
+		String user = qcUser.getText().toString();
+		String pass = qcPass.getText();
+		
+		try {
+			if(host.equals("")) {
+				JOptionPane.showMessageDialog(frame,
+						"The host provided is invalid",
+						"Invalid Parameter",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			else if(!InetAddress.getByName(host).isReachable(1000)) {
+				JOptionPane.showMessageDialog(frame,
+						"The host provided is not reachable",
+						"Invalid Parameter",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		} catch (HeadlessException e1) {
+			JOptionPane.showMessageDialog(frame,
+					"An unknown error occured connecting to the host",
+					"Invalid Parameter",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		} catch (UnknownHostException e1) {
+			JOptionPane.showMessageDialog(frame,
+					"The host provided is invalid",
+					"Invalid Parameter",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		} catch (IOException e1) {
+			JOptionPane.showMessageDialog(frame,
+					"An unknown error occured connecting to the host",
+					"Invalid Parameter",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		if(!port_string.equals("")) {
+			try {
+				port = Integer.parseInt(port_string);
+			} catch(NumberFormatException e) {
+				JOptionPane.showMessageDialog(frame,
+						"The port provided is invalid",
+						"Invalid Parameter",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		}
+		
+		if(user.equals("")) {
+			user = "anonymous";
+		}
+		
+		clearQcFields();
+		
+		cManager.connect(host, port, user, pass);
 	}
 	
 	public void clearQcFields() {

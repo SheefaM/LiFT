@@ -83,7 +83,6 @@ public class Connection implements Runnable {
 		
 		tab.setLocalPath(localPath);
 		tab.setRemotePath(remotePath);
-		tab.updateRemoteTable(getCwdFileList());
 	}
 	
 	public String getCwd() {
@@ -100,7 +99,7 @@ public class Connection implements Runnable {
 			/* */
 		}
 		
-		return cwd;
+		return cwd + "/";
 	}
 	
 	public boolean changeDirectory(String path) {
@@ -135,10 +134,10 @@ public class Connection implements Runnable {
 		return success;
 	}
 	
-	public boolean moveItem(String sourcePath, String targetPath) {
+	public boolean moveItem(FTPFile source, String targetPath) {
 		boolean success = true;
 		try {
-			client.rename(sourcePath, targetPath);
+			client.rename(source.getName(), targetPath);
 		} catch (IllegalStateException e) {
 			success = true;
 		} catch (IOException e) {
@@ -152,10 +151,43 @@ public class Connection implements Runnable {
 	}
 	
 	// This handles files and directories.
-	public boolean deleteItem(String path) {
-		//client.deleteFile("path");
-		//client.deleteDirectory("path")
-		return true;
+	public boolean deleteItem(FTPFile item) {
+		boolean success = true;
+		
+		try {
+			if(item.getType() != FTPFile.TYPE_DIRECTORY) {
+				//Just delete if it's a file
+				client.deleteFile(item.getName());
+			} else {
+				//For directories we have to recurse and delete files and other directories first
+				String startDir = getCwd();
+				recursiveDelete(item);
+				changeDirectory(startDir);
+			}
+		} catch (IllegalStateException e) {
+			success = false;
+		} catch (IOException e) {
+			success = false;
+		} catch (FTPIllegalReplyException e) {
+			success = false;
+		} catch (FTPException e) {
+			success = false;
+		}
+		return success;
+	}
+	
+	private void recursiveDelete(FTPFile file) throws IllegalStateException, IOException, FTPIllegalReplyException, FTPException {
+		String cwd = getCwd();
+		if(file.getType() == FTPFile.TYPE_DIRECTORY) {
+			changeDirectory(getCwd() + file.getName());
+			for(FTPFile f : getCwdFileList()) {
+				recursiveDelete(f);
+			}
+			changeDirectory(cwd);
+			client.deleteDirectory(file.getName());
+		} else {
+			client.deleteFile(file.getName());
+		}
 	}
 
 	public ArrayList<FTPFile> getCwdFileList() {

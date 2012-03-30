@@ -18,7 +18,7 @@ public class ConnectionManager {
 	}
 	
 	public void connect(String title, String host, int port, String user, String pass, String localPath, String remotePath) {
-		int connId = tabManager.addTab(title, "<html>Connection to " + host + "<br />as " + user + "<br />on port " + port + "</html>");
+		int connId = tabManager.addTab(title, "<html>Connection to " + host + "<br />as " + user + "<br />on port " + (port > 0 ? port : 21) + "</html>");
 		
 		Connection connection = new Connection(this, connId, host, port, user, pass, localPath, remotePath);
 		connection.tab = tabManager.tabs.get(connId);

@@ -7,11 +7,21 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.Box;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -19,8 +29,10 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableRowSorter;
 
 import org.jdesktop.swingx.JXTable;
 
@@ -86,6 +98,16 @@ public class Tab {
 		panel_2.add(localPathField, gbc_localPathField);
 		localPathField.setColumns(10);
 		
+		InputMap iMap = localPathField.getInputMap(JComponent.WHEN_FOCUSED);
+		ActionMap aMap = localPathField.getActionMap();
+		iMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "enter");
+		aMap.put("enter", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				setLocalPath(localPathField.getText());
+			}
+		});
+		
 		//Rigid area
 		Component rigidArea_7 = Box.createRigidArea(new Dimension(20, 20));
 		GridBagConstraints gbc_rigidArea_7 = new GridBagConstraints();
@@ -132,6 +154,16 @@ public class Tab {
 		panel_3.add(remotePathField, gbc_remotePathField);
 		remotePathField.setColumns(10);
 		
+		iMap = remotePathField.getInputMap(JComponent.WHEN_FOCUSED);
+		aMap = remotePathField.getActionMap();
+		iMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "enter");
+		aMap.put("enter", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				setRemotePath(remotePathField.getText());
+			}
+		});
+		
 		//Rigid area
 		Component rigidArea_9 = Box.createRigidArea(new Dimension(20, 20));
 		GridBagConstraints gbc_rigidArea_9 = new GridBagConstraints();
@@ -155,6 +187,8 @@ public class Tab {
 		
 		//localTable
 		scrollPane.setViewportView(localTable);
+		localTable.setRowSorter(null);
+		localTable.setAutoCreateRowSorter(false);
 		
 		//right scrollPane
 		JScrollPane scrollPane_1 = new JScrollPane();
@@ -162,33 +196,78 @@ public class Tab {
 		
 		//remoteTable
 		scrollPane_1.setViewportView(remoteTable);
+		remoteTable.setRowSorter(null);
+		remoteTable.setAutoCreateRowSorter(false);
 		
 		localTable.addMouseListener(new MouseAdapter()
 		{
 			public void mouseClicked(MouseEvent event) {
 				if(SwingUtilities.isRightMouseButton(event)) {
 					//Right click
-					int rowNum = localTable.rowAtPoint(event.getPoint());
+					int rowIndex = localTable.rowAtPoint(event.getPoint());
 					
-					//Ex: Getting a file
-					FTPFile file = ((LocalTableModel)localTable.getModel()).files.get(rowNum);
+					File selectedFile = new File("");
 					
-					//TODO: Right click menu
-					
-					final LocalFilePopupMenu menu = new LocalFilePopupMenu();
-					menu.addMouseListener(new MouseAdapter() {
-			        	public void mouseClicked(MouseEvent event) {
-			        		JMenuItem item = (JMenuItem)event.getComponent();
-			        		
-			        		showDialog(false, "Menu Item", menu.getComponentIndex(item) + " - " + item.getText());
-			        	}
-			        });
-					
+					if(rowIndex == -1) { //Right clicking the table
+						LocalTablePopupMenu menu = new LocalTablePopupMenu();
+						menu.show(localTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+					} else {
+						String selectedName = (String)localTable.getValueAt(rowIndex, 0);
+						if(selectedName == "../") {//Right clicking the table
+							LocalTablePopupMenu menu = new LocalTablePopupMenu();
+							menu.show(localTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+						} else { //Right clicking an entry
+							for(File file : ((LocalTableModel)localTable.getModel()).files) {
+								if(file.isDirectory()) {
+									if((file.getName() + "/").equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								} else {
+									if(file.getName().equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								}
+							}
+							
+							LocalFilePopupMenu menu = new LocalFilePopupMenu(selectedFile);
+							menu.show(localTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+						}
+					}
 				} else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2) {
 					//Double-click
-					int rowNum = localTable.rowAtPoint(event.getPoint());
-					//TODO: Do a download here
-					showDialog(false, "Double-Clicked", "row: " + rowNum);
+					int rowIndex = localTable.rowAtPoint(event.getPoint());
+					
+					File selectedFile = new File("");
+					
+					if(rowIndex != -1) {
+						String selectedName = (String)localTable.getValueAt(rowIndex, 0);
+						if(selectedName == "../") {//Double-clicking the upDir
+							connection.localPath = dirStringUp(connection.localPath);
+							setLocalPath(connection.localPath);
+						} else { //Double-clicking an entry
+							for(File file : ((LocalTableModel)localTable.getModel()).files) {
+								if(file.isDirectory()) {
+									if((file.getName() + "/").equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								} else {
+									if(file.getName().equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								}
+							}
+							if(selectedFile.isDirectory()) {
+								connection.localPath = dirStringAppend(connection.localPath, selectedFile.getName());
+								setLocalPath(connection.localPath);
+							} else {
+								showDialog(false, "Double Clicked", "Double clicked " + selectedFile.getName());
+							}
+						}
+					}
 				}
 			}
 		});
@@ -198,67 +277,118 @@ public class Tab {
 			public void mouseClicked(MouseEvent event) {
 				if(SwingUtilities.isRightMouseButton(event)) {
 					//Right click
-					int rowNum = remoteTable.rowAtPoint(event.getPoint());
-					//TODO: check if rowNum starts at 0 or 1
+					int rowIndex = remoteTable.rowAtPoint(event.getPoint());
 					
-					//Ex: Getting a file
-					FTPFile file = ((RemoteTableModel)remoteTable.getModel()).files.get(rowNum);
+					FTPFile selectedFile = new FTPFile();
 					
-					//TODO: Right click menu
-					
-					final RemoteFilePopupMenu menu = new RemoteFilePopupMenu();
-					menu.addMouseListener(new MouseAdapter() {
-			        	public void mouseClicked(MouseEvent event) {
-			        		JMenuItem item = (JMenuItem)event.getComponent();
-			        		
-			        		showDialog(false, "Menu Item", menu.getComponentIndex(item) + " - " + item.getText());
-			        	}
-			        });
-					
-					
+					if(rowIndex == -1) { //Right clicking the table
+						RemoteTablePopupMenu menu = new RemoteTablePopupMenu();
+						menu.show(remoteTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+					} else {
+						String selectedName = (String)remoteTable.getValueAt(rowIndex, 0);
+						if(selectedName == "../") {//Right clicking the table
+							RemoteTablePopupMenu menu = new RemoteTablePopupMenu();
+							menu.show(remoteTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+						} else { //Right clicking an entry
+							for(FTPFile file : ((RemoteTableModel)remoteTable.getModel()).files) {
+								if(file.getType() == FTPFile.TYPE_DIRECTORY) {
+									if((file.getName() + "/").equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								} else {
+									if(file.getName().equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								}
+							}
+							
+							RemoteFilePopupMenu menu = new RemoteFilePopupMenu(selectedFile);
+							menu.show(remoteTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+						}
+					}
 				} else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2) {
 					//Double-click
-					int rowNum = remoteTable.rowAtPoint(event.getPoint());
-					//TODO: Do a download here
-					showDialog(false, "Double-Clicked", "row: " + rowNum);
+					int rowIndex = remoteTable.rowAtPoint(event.getPoint());
+					
+					FTPFile selectedFile = new FTPFile();
+					
+					if(rowIndex != -1) {
+						String selectedName = (String)remoteTable.getValueAt(rowIndex, 0);
+						if(selectedName == "../") {//Double-clicking the upDir
+							connection.changeDirectoryUp();
+							setRemotePath(connection.getCwd());
+						} else { //Double-clicking an entry
+							for(FTPFile file : ((RemoteTableModel)remoteTable.getModel()).files) {
+								if(file.getType() == FTPFile.TYPE_DIRECTORY) {
+									if((file.getName() + "/").equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								} else {
+									if(file.getName().equals(selectedName)) {
+										selectedFile = file;
+										break;
+									}
+								}
+							}
+							if(selectedFile.getType() == FTPFile.TYPE_DIRECTORY) {
+								connection.changeDirectory(selectedFile.getName());
+								setRemotePath(connection.getCwd());
+							} else {
+								showDialog(false, "Double Clicked", "Double clicked " + selectedFile.getName());
+							}
+						}
+					}
 				}
 			}
 		});
 	}
 	
+	public String dirStringUp(String cwd) {
+		String newpath = "/";
+		if(!cwd.equals("/") && !cwd.equals("")) {
+			newpath = cwd.substring(0, cwd.substring(0, cwd.length() -2).lastIndexOf("/") + 1);
+		}
+		return newpath;
+	}
+	
+	public String dirStringAppend(String cwd, String append)
+	{
+		String newpath = "/";
+		if(cwd.equals("")) { cwd = "/"; }
+		newpath = cwd + append + "/";
+		return newpath;
+	}
 	public void showDialog(boolean error, String title, String text) {
 		tabManager.showDialog(error, title, text);
 	}
 	
 	public void setLocalPath(String path) {
 		localPathField.setText(path);
+		connection.localPath = path;
+		updateLocalTable(path);
 	}
 	
 	public void setRemotePath(String path) {
-		remotePathField.setText(path);
+		if(path.equals("//")) { path = "/"; }
+		if(connection.changeDirectory(path)) {
+			remotePathField.setText(path);
+			connection.remotePath = path;
+			updateRemoteTable();
+		}
 	}
 	
-	public void updateLocalTable(ArrayList<FTPFile> files) {
+	public void updateLocalTable(String path) {
+		File folder = new File(path);
+		ArrayList<File> files = new ArrayList<File>(Arrays.asList(folder.listFiles()));
 		localTable.setModel(new LocalTableModel(files));
 	}
 	
-	public void updateRemoteTable(ArrayList<FTPFile> files) {
-		remoteTable.setModel(new RemoteTableModel(files));
-	}
-	
-	class RemoteFilePopupMenu extends JPopupMenu {
-	    public RemoteFilePopupMenu(){
-	        JMenuItem item1 = new JMenuItem("Test");
-	        
-	        add(item1);
-	    }
-	}
-	
-	class LocalFilePopupMenu extends JPopupMenu {
-	    public LocalFilePopupMenu(){
-	        JMenuItem item1 = new JMenuItem("Test");
-	        add(item1);
-	    }
+	public void updateRemoteTable() {
+		remoteTable.setModel(new RemoteTableModel(connection.getCwdFileList()));
+		
 	}
 	
 	private class RemoteTableModel extends AbstractTableModel {
@@ -281,19 +411,127 @@ public class Tab {
 		
  
 		public int getRowCount() {
-			return files.size();
+			return files.size() + 1;
 		}
  
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			return files.get(rowIndex).getName();
+			String name;
+			if(rowIndex == 0) {
+				name = "../";
+			}
+			else {
+				FTPFile file = files.get(rowIndex - 1);
+				if(file.getType() == FTPFile.TYPE_DIRECTORY) {
+					name = file.getName() + "/";
+				} else {
+					name = file.getName();
+				}
+			}
+			return name;
 		}
+	}
+	
+	class RemoteFilePopupMenu extends JPopupMenu {
+		FTPFile targetFile;
+		JMenuItem test = new JMenuItem("Test");
+		JMenuItem test1 = new JMenuItem("Test1");
+	    public RemoteFilePopupMenu(FTPFile tFile){
+	    	this.targetFile = tFile;
+	        
+	    	test.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "Test on " + targetFile.getName());
+				}
+	        });
+	        
+	        test1.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "Test1 on " + targetFile.getName());
+				}
+	        });
+	        add(test);
+	        add(test1);
+	    }
+	}
+	
+	class RemoteTablePopupMenu extends JPopupMenu {
+		JMenuItem tabletest = new JMenuItem("TableTest");
+		JMenuItem tabletest1 = new JMenuItem("TableTest1");
+	    public RemoteTablePopupMenu(){
+	        
+	    	tabletest.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "TableTest in " + connection.getCwd());
+				}
+	        });
+	        
+	        tabletest1.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "TableTest1 in " + connection.getCwd());
+				}
+	        });
+	        add(tabletest);
+	        add(tabletest1);
+	    }
+	}
+	
+	class LocalTablePopupMenu extends JPopupMenu {
+		JMenuItem tabletest = new JMenuItem("TableTest");
+		JMenuItem tabletest1 = new JMenuItem("TableTest1");
+	    public LocalTablePopupMenu(){
+	        
+	    	tabletest.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "TableTest in " + connection.localPath);
+				}
+	        });
+	        
+	        tabletest1.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "TableTest1 in " + connection.localPath);
+				}
+	        });
+	        add(tabletest);
+	        add(tabletest1);
+	    }
+	}
+	
+	class LocalFilePopupMenu extends JPopupMenu {
+		File targetFile;
+		JMenuItem test = new JMenuItem("Test");
+		JMenuItem test1 = new JMenuItem("Test1");
+	    public LocalFilePopupMenu(File tFile){
+	    	this.targetFile = tFile;
+	        
+	    	test.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "Test on " + targetFile.getName());
+				}
+	        });
+	        
+	        test1.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Menu Item Selected", "Test1 on " + targetFile.getName());
+				}
+	        });
+	        add(test);
+	        add(test1);
+	    }
 	}
 	
 	private class LocalTableModel extends AbstractTableModel {
 		 
-		public ArrayList<FTPFile> files;
+		public ArrayList<File> files;
 		
-		public LocalTableModel(ArrayList<FTPFile> files) {
+		public LocalTableModel(ArrayList<File> files) {
 			this.files = files;
 		}
 		
@@ -309,11 +547,23 @@ public class Tab {
 		
  
 		public int getRowCount() {
-			return 5;
+			return files.size() + 1;
 		}
  
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			return "" + rowIndex + "" + columnIndex;
+			String name;
+			if(rowIndex == 0) {
+				name = "../";
+			}
+			else {
+				File file = files.get(rowIndex - 1);
+				if(file.isDirectory()) {
+					name = file.getName() + "/";
+				} else {
+					name = file.getName();
+				}
+			}
+			return name;
 		}
 	}
 }
