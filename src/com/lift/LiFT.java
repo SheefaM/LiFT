@@ -241,7 +241,7 @@ public class LiFT {
 				String port_string = qcPort.getText().toString();
 				int port = -1;
 				String user = qcUser.getText().toString();
-				String pass = qcPass.getPassword().toString();
+				String pass = qcPass.getText();
 				
 				try {
 					if(host.equals("")) {
