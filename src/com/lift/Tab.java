@@ -16,6 +16,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
@@ -26,6 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
@@ -36,6 +38,10 @@ import javax.swing.table.TableRowSorter;
 
 import org.jdesktop.swingx.JXTable;
 
+import com.lift.FileTransfer.TransferType;
+
+
+
 public class Tab {
 	
 	private ConnectionTabManager tabManager;
@@ -45,6 +51,8 @@ public class Tab {
 	public JTextField remotePathField = new JTextField();
 	public JXTable localTable = new JXTable();
 	public JXTable remoteTable = new JXTable();
+	public JXTable transferTable = new JXTable();
+	private int transferId = 0;
 	
 	public Tab(ConnectionTabManager tabManager, String title) {
 		this.tabManager = tabManager;
@@ -52,51 +60,161 @@ public class Tab {
 		tabPanel.setName(title);
 		
 		//tabPanel
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[]{445, 441, 0};
-		gbl_panel.rowHeights = new int[]{39, 216, 0};
-		gbl_panel.columnWeights = new double[]{1.0, 1.0, Double.MIN_VALUE};
-		gbl_panel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		tabPanel.setLayout(gbl_panel);
-		
-		//Left Panel
-		JPanel panel_2 = new JPanel();
-		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
-		gbc_panel_2.insets = new Insets(0, 0, 5, 5);
-		gbc_panel_2.fill = GridBagConstraints.BOTH;
-		gbc_panel_2.gridx = 0;
-		gbc_panel_2.gridy = 0;
-		tabPanel.add(panel_2, gbc_panel_2);
-		GridBagLayout gbl_panel_2 = new GridBagLayout();
-		gbl_panel_2.columnWidths = new int[]{0, 0, 0, 0};
-		gbl_panel_2.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0};
-		panel_2.setLayout(gbl_panel_2);
-		
-		//Rigid area
-		Component rigidArea_6 = Box.createRigidArea(new Dimension(20, 20));
-		GridBagConstraints gbc_rigidArea_6 = new GridBagConstraints();
-		gbc_rigidArea_6.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_6.gridx = 0;
-		gbc_rigidArea_6.gridy = 0;
-		panel_2.add(rigidArea_6, gbc_rigidArea_6);
-		
-		//label for localPathField
-		JLabel lblNewLabel = new JLabel("Local:");
-		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
-		gbc_lblNewLabel.insets = new Insets(0, 0, 0, 5);
-		gbc_lblNewLabel.gridx = 1;
-		gbc_lblNewLabel.gridy = 0;
-		panel_2.add(lblNewLabel, gbc_lblNewLabel);
-		
-		//localPathField
-		GridBagConstraints gbc_localPathField = new GridBagConstraints();
-		gbc_localPathField.gridwidth = 1;
-		gbc_localPathField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_localPathField.insets = new Insets(0, 0, 0, 5);
-		gbc_localPathField.gridx = 2;
-		gbc_localPathField.gridy = 0;
-		panel_2.add(localPathField, gbc_localPathField);
-		localPathField.setColumns(10);
+				GridBagLayout gbl_panel = new GridBagLayout();
+				gbl_panel.columnWidths = new int[]{445, 441, 0};
+				gbl_panel.rowHeights = new int[]{39, 216, 167};
+				gbl_panel.columnWeights = new double[]{1.0, 1.0, Double.MIN_VALUE};
+				gbl_panel.rowWeights = new double[]{0.0, 1.0, 0.0};
+				tabPanel.setLayout(gbl_panel);
+				
+				//Left Panel
+				JPanel panel_2 = new JPanel();
+				GridBagConstraints gbc_panel_2 = new GridBagConstraints();
+				gbc_panel_2.insets = new Insets(0, 0, 5, 5);
+				gbc_panel_2.fill = GridBagConstraints.BOTH;
+				gbc_panel_2.gridx = 0;
+				gbc_panel_2.gridy = 0;
+				tabPanel.add(panel_2, gbc_panel_2);
+				GridBagLayout gbl_panel_2 = new GridBagLayout();
+				gbl_panel_2.columnWidths = new int[]{0, 0, 0, 0};
+				gbl_panel_2.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0};
+				panel_2.setLayout(gbl_panel_2);
+				
+				//Rigid area
+				Component rigidArea_6 = Box.createRigidArea(new Dimension(20, 20));
+				GridBagConstraints gbc_rigidArea_6 = new GridBagConstraints();
+				gbc_rigidArea_6.insets = new Insets(0, 0, 0, 5);
+				gbc_rigidArea_6.gridx = 0;
+				gbc_rigidArea_6.gridy = 0;
+				panel_2.add(rigidArea_6, gbc_rigidArea_6);
+				
+				//label for localPathField
+				JLabel lblNewLabel = new JLabel("Local:");
+				GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
+				gbc_lblNewLabel.insets = new Insets(0, 0, 0, 5);
+				gbc_lblNewLabel.gridx = 1;
+				gbc_lblNewLabel.gridy = 0;
+				panel_2.add(lblNewLabel, gbc_lblNewLabel);
+				
+				//localPathField
+				GridBagConstraints gbc_localPathField = new GridBagConstraints();
+				gbc_localPathField.gridwidth = 1;
+				gbc_localPathField.fill = GridBagConstraints.HORIZONTAL;
+				gbc_localPathField.insets = new Insets(0, 0, 0, 5);
+				gbc_localPathField.gridx = 2;
+				gbc_localPathField.gridy = 0;
+				panel_2.add(localPathField, gbc_localPathField);
+				localPathField.setColumns(10);
+				
+				
+				//Rigid area
+				Component rigidArea_7 = Box.createRigidArea(new Dimension(20, 20));
+				GridBagConstraints gbc_rigidArea_7 = new GridBagConstraints();
+				gbc_rigidArea_7.gridx = 3;
+				gbc_rigidArea_7.gridy = 0;
+				panel_2.add(rigidArea_7, gbc_rigidArea_7);
+				
+				//Right panel
+				JPanel panel_3 = new JPanel();
+				GridBagConstraints gbc_panel_3 = new GridBagConstraints();
+				gbc_panel_3.insets = new Insets(0, 0, 5, 0);
+				gbc_panel_3.fill = GridBagConstraints.BOTH;
+				gbc_panel_3.gridx = 1;
+				gbc_panel_3.gridy = 0;
+				tabPanel.add(panel_3, gbc_panel_3);
+				GridBagLayout gbl_panel_3 = new GridBagLayout();
+				gbl_panel_3.columnWidths = new int[]{0, 0, 0, 0};
+				gbl_panel_3.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0};
+				panel_3.setLayout(gbl_panel_3);
+				
+				//Rigid area
+				Component rigidArea_8 = Box.createRigidArea(new Dimension(20, 20));
+				GridBagConstraints gbc_rigidArea_8 = new GridBagConstraints();
+				gbc_rigidArea_8.insets = new Insets(0, 0, 0, 5);
+				gbc_rigidArea_8.gridx = 0;
+				gbc_rigidArea_8.gridy = 0;
+				panel_3.add(rigidArea_8, gbc_rigidArea_8);
+				
+				//label for remotePathField
+				JLabel lblNewLabel_1 = new JLabel("Remote:");
+				GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
+				gbc_lblNewLabel_1.anchor = GridBagConstraints.EAST;
+				gbc_lblNewLabel_1.insets = new Insets(0, 0, 0, 5);
+				gbc_lblNewLabel_1.gridx = 1;
+				gbc_lblNewLabel_1.gridy = 0;
+				panel_3.add(lblNewLabel_1, gbc_lblNewLabel_1);
+				
+				//remotePathField
+				GridBagConstraints gbc_remotePathField = new GridBagConstraints();
+				gbc_remotePathField.insets = new Insets(0, 0, 0, 5);
+				gbc_remotePathField.fill = GridBagConstraints.HORIZONTAL;
+				gbc_remotePathField.gridx = 2;
+				gbc_remotePathField.gridy = 0;
+				panel_3.add(remotePathField, gbc_remotePathField);
+				remotePathField.setColumns(10);
+				
+				
+				//Rigid area
+				Component rigidArea_9 = Box.createRigidArea(new Dimension(20, 20));
+				GridBagConstraints gbc_rigidArea_9 = new GridBagConstraints();
+				gbc_rigidArea_9.gridx = 3;
+				gbc_rigidArea_9.gridy = 0;
+				panel_3.add(rigidArea_9, gbc_rigidArea_9);
+				
+				//splitPane
+				JSplitPane splitPane = new JSplitPane();
+				splitPane.setResizeWeight(0.5);
+				GridBagConstraints gbc_splitPane = new GridBagConstraints();
+				gbc_splitPane.gridwidth = 2;
+				gbc_splitPane.fill = GridBagConstraints.BOTH;
+				gbc_splitPane.gridx = 0;
+				gbc_splitPane.gridy = 1;
+				tabPanel.add(splitPane, gbc_splitPane);
+				
+				//left scrollPane
+				JScrollPane scrollPane = new JScrollPane();
+				splitPane.setLeftComponent(scrollPane);
+				
+				//localTable
+				scrollPane.setViewportView(localTable);
+				localTable.setRowSorter(null);
+				localTable.setAutoCreateRowSorter(false);
+				
+				//right scrollPane
+				JScrollPane scrollPane_1 = new JScrollPane();
+				splitPane.setRightComponent(scrollPane_1);
+				
+				//remoteTable
+				scrollPane_1.setViewportView(remoteTable);
+				remoteTable.setRowSorter(null);
+				remoteTable.setAutoCreateRowSorter(false);
+				
+				JPanel panel = new JPanel();
+				GridBagConstraints gbc_panel = new GridBagConstraints();
+				gbc_panel.gridwidth = 2;
+				gbc_panel.insets = new Insets(0, 0, 0, 5);
+				gbc_panel.fill = GridBagConstraints.BOTH;
+				gbc_panel.gridx = 0;
+				gbc_panel.gridy = 2;
+				tabPanel.add(panel, gbc_panel);
+				gbl_panel = new GridBagLayout();
+				gbl_panel.columnWidths = new int[]{0, 0};
+				gbl_panel.rowHeights = new int[]{0, 0};
+				gbl_panel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+				gbl_panel.rowWeights = new double[]{1.0, Double.MIN_VALUE};
+				panel.setLayout(gbl_panel);
+				
+				JScrollPane scrollPane_2 = new JScrollPane();
+				GridBagConstraints gbc_scrollPane_2 = new GridBagConstraints();
+				gbc_scrollPane_2.fill = GridBagConstraints.BOTH;
+				gbc_scrollPane_2.gridx = 0;
+				gbc_scrollPane_2.gridy = 0;
+				panel.add(scrollPane_2, gbc_scrollPane_2);
+				
+				transferTable.setModel(new TransferTableModel(transferTable));
+				transferTable.setRowSorter(null);
+				transferTable.setAutoCreateRowSorter(false);
+				scrollPane_2.setViewportView(transferTable);
 		
 		InputMap iMap = localPathField.getInputMap(JComponent.WHEN_FOCUSED);
 		ActionMap aMap = localPathField.getActionMap();
@@ -108,52 +226,6 @@ public class Tab {
 			}
 		});
 		
-		//Rigid area
-		Component rigidArea_7 = Box.createRigidArea(new Dimension(20, 20));
-		GridBagConstraints gbc_rigidArea_7 = new GridBagConstraints();
-		gbc_rigidArea_7.gridx = 3;
-		gbc_rigidArea_7.gridy = 0;
-		panel_2.add(rigidArea_7, gbc_rigidArea_7);
-		
-		//Right panel
-		JPanel panel_3 = new JPanel();
-		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
-		gbc_panel_3.insets = new Insets(0, 0, 5, 0);
-		gbc_panel_3.fill = GridBagConstraints.BOTH;
-		gbc_panel_3.gridx = 1;
-		gbc_panel_3.gridy = 0;
-		tabPanel.add(panel_3, gbc_panel_3);
-		GridBagLayout gbl_panel_3 = new GridBagLayout();
-		gbl_panel_3.columnWidths = new int[]{0, 0, 0, 0};
-		gbl_panel_3.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0};
-		panel_3.setLayout(gbl_panel_3);
-		
-		//Rigid area
-		Component rigidArea_8 = Box.createRigidArea(new Dimension(20, 20));
-		GridBagConstraints gbc_rigidArea_8 = new GridBagConstraints();
-		gbc_rigidArea_8.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_8.gridx = 0;
-		gbc_rigidArea_8.gridy = 0;
-		panel_3.add(rigidArea_8, gbc_rigidArea_8);
-		
-		//label for remotePathField
-		JLabel lblNewLabel_1 = new JLabel("Remote:");
-		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
-		gbc_lblNewLabel_1.anchor = GridBagConstraints.EAST;
-		gbc_lblNewLabel_1.insets = new Insets(0, 0, 0, 5);
-		gbc_lblNewLabel_1.gridx = 1;
-		gbc_lblNewLabel_1.gridy = 0;
-		panel_3.add(lblNewLabel_1, gbc_lblNewLabel_1);
-		
-		//remotePathField
-		GridBagConstraints gbc_remotePathField = new GridBagConstraints();
-		gbc_remotePathField.insets = new Insets(0, 0, 0, 5);
-		gbc_remotePathField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_remotePathField.gridx = 2;
-		gbc_remotePathField.gridy = 0;
-		panel_3.add(remotePathField, gbc_remotePathField);
-		remotePathField.setColumns(10);
-		
 		iMap = remotePathField.getInputMap(JComponent.WHEN_FOCUSED);
 		aMap = remotePathField.getActionMap();
 		iMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "enter");
@@ -163,41 +235,6 @@ public class Tab {
 				setRemotePath(remotePathField.getText());
 			}
 		});
-		
-		//Rigid area
-		Component rigidArea_9 = Box.createRigidArea(new Dimension(20, 20));
-		GridBagConstraints gbc_rigidArea_9 = new GridBagConstraints();
-		gbc_rigidArea_9.gridx = 3;
-		gbc_rigidArea_9.gridy = 0;
-		panel_3.add(rigidArea_9, gbc_rigidArea_9);
-		
-		//splitPane
-		JSplitPane splitPane = new JSplitPane();
-		splitPane.setResizeWeight(0.5);
-		GridBagConstraints gbc_splitPane = new GridBagConstraints();
-		gbc_splitPane.gridwidth = 2;
-		gbc_splitPane.fill = GridBagConstraints.BOTH;
-		gbc_splitPane.gridx = 0;
-		gbc_splitPane.gridy = 1;
-		tabPanel.add(splitPane, gbc_splitPane);
-		
-		//left scrollPane
-		JScrollPane scrollPane = new JScrollPane();
-		splitPane.setLeftComponent(scrollPane);
-		
-		//localTable
-		scrollPane.setViewportView(localTable);
-		localTable.setRowSorter(null);
-		localTable.setAutoCreateRowSorter(false);
-		
-		//right scrollPane
-		JScrollPane scrollPane_1 = new JScrollPane();
-		splitPane.setRightComponent(scrollPane_1);
-		
-		//remoteTable
-		scrollPane_1.setViewportView(remoteTable);
-		remoteTable.setRowSorter(null);
-		remoteTable.setAutoCreateRowSorter(false);
 		
 		localTable.addMouseListener(new MouseAdapter()
 		{
@@ -264,7 +301,7 @@ public class Tab {
 								connection.localPath = dirStringAppend(connection.localPath, selectedFile.getName());
 								setLocalPath(connection.localPath);
 							} else {
-								showDialog(false, "Double Clicked", "Double clicked " + selectedFile.getName());
+								uploadFile(selectedFile);
 							}
 						}
 					}
@@ -337,13 +374,43 @@ public class Tab {
 								connection.changeDirectory(selectedFile.getName());
 								setRemotePath(connection.getCwd());
 							} else {
-								showDialog(false, "Double Clicked", "Double clicked " + selectedFile.getName());
+								downloadFile(selectedFile);
 							}
 						}
 					}
 				}
 			}
 		});
+	}
+	
+	public void downloadFile(FTPFile file) {
+		transferId++;
+		String localFile = connection.localPath + file.getName();
+		String remoteFile = connection.getCwd() + file.getName();
+		int size = (int)file.getSize();
+		FileTransfer ft = new FileTransfer(connection,
+				(TransferTableModel)transferTable.getModel(),
+				transferId,
+				TransferType.Download,
+				localFile,
+				remoteFile,
+				size);
+		connection.enqueueDownload(ft);
+	}
+	
+	public void uploadFile(File file) {
+		transferId++;
+		String localFile = file.getAbsolutePath();
+		String remoteFile = connection.getCwd() + file.getName();
+		int size = (int)file.length();
+		FileTransfer ft = new FileTransfer(connection,
+				(TransferTableModel)transferTable.getModel(),
+				transferId,
+				TransferType.Upload,
+				localFile,
+				remoteFile,
+				size);
+		connection.enqueueUpload(ft);
 	}
 	
 	public String dirStringUp(String cwd) {
@@ -543,8 +610,6 @@ public class Tab {
 		public String getColumnName(int column) {
 			return "Filename";
 		}
-		
-		
  
 		public int getRowCount() {
 			return files.size() + 1;
@@ -564,6 +629,95 @@ public class Tab {
 				}
 			}
 			return name;
+		}
+	}
+	
+	public class TransferTableModel extends AbstractTableModel {
+		 
+		private HashMap<Integer, FileTransfer> transfers = new HashMap<Integer, FileTransfer>();
+		private ArrayList<Integer> positions = new ArrayList<Integer>();
+		private JXTable table;
+		
+		public TransferTableModel(JXTable table) {
+			this.table = table;
+		}
+		
+		private void updateTable() {
+			table.setModel(this);
+		}
+		
+		public void addTransfer(FileTransfer ft) {
+			transfers.put(ft.transferId, ft);
+			positions.add(ft.transferId);
+			ft.start();
+			updateTable();
+		}
+		
+		public void updateTransferProgress() {
+			updateTable();
+		}
+		
+		public void transferStateChanged(int transferId) {
+			FileTransfer transfer = transfers.get(transferId);
+			switch(transfer.state) {
+			case Completed:
+				break;
+			case Aborted:
+				break;
+			case Failed:
+				break;
+			default:
+				break;
+			}
+		}
+		
+		public int getColumnCount() {
+			return 3;
+		}
+ 
+		@Override
+		public String getColumnName(int column) {
+			switch(column) {
+			case 0:
+				return "Progress";
+			case 1:
+				return "Filename";
+			case 2:
+				return "Status";
+			default:
+				return "---";
+			}
+		}
+ 
+		public int getRowCount() {
+			return transfers.size();
+		}
+ 
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			FileTransfer transfer;
+			
+			switch(columnIndex) {
+			case 0:
+				transfer = transfers.get(positions.get(rowIndex));
+				JProgressBar progressBar = new JProgressBar(0, transfer.maxProgress);
+				progressBar.setValue(transfer.curProgress);
+				progressBar.setStringPainted(true);
+				return progressBar;
+			case 1:
+				transfer = transfers.get(positions.get(rowIndex));
+				String path;
+				if(transfer.type == TransferType.Download) {
+					path = transfer.remoteFile;
+				} else {
+					path = transfer.localFile;
+				}
+				return path.substring(path.lastIndexOf("/") + 1);
+			case 2:
+				transfer = transfers.get(positions.get(rowIndex));
+				return transfer.state.toString();
+			default:
+				return "---";
+			}
 		}
 	}
 }

@@ -3,6 +3,7 @@ package com.lift;
 import it.sauronsoftware.ftp4j.FTPAbortedException;
 import it.sauronsoftware.ftp4j.FTPClient;
 import it.sauronsoftware.ftp4j.FTPDataTransferException;
+import it.sauronsoftware.ftp4j.FTPDataTransferListener;
 import it.sauronsoftware.ftp4j.FTPException;
 import it.sauronsoftware.ftp4j.FTPFile;
 import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
@@ -220,7 +221,67 @@ public class Connection implements Runnable {
 	}
 	
 	public void closeConnection() {
-		
+		try {
+			client.abortCurrentDataTransfer(true);
+			client.disconnect(true);
+		} catch (IllegalStateException e) {
+			/* */
+		} catch (IOException e) {
+			/* */
+		} catch (FTPIllegalReplyException e) {
+			/* */
+		} catch (FTPException e) {
+			/* */
+		}
 	}
-
+	
+	public void enqueueDownload(FileTransfer ft) {
+		boolean error = false;
+		try {
+			client.download(ft.remoteFile, new File(ft.localFile), ft);
+		} catch (IllegalStateException e) {
+			error = true;
+		} catch (FileNotFoundException e) {
+			error = true;
+		} catch (IOException e) {
+			error = true;
+		} catch (FTPIllegalReplyException e) {
+			error = true;
+		} catch (FTPException e) {
+			error = true;
+		} catch (FTPDataTransferException e) {
+			error = true;
+		} catch (FTPAbortedException e) {
+			error = true;
+		}
+		
+		if(error) {
+			ft.failed();
+		}
+	}
+	
+	public void enqueueUpload(FileTransfer ft) {
+		boolean error = false;
+		try {
+			client.upload(new File(ft.localFile), ft);
+		} catch (IllegalStateException e) {
+			error = true;
+		} catch (FileNotFoundException e) {
+			error = true;
+		} catch (IOException e) {
+			error = true;
+		} catch (FTPIllegalReplyException e) {
+			error = true;
+		} catch (FTPException e) {
+			error = true;
+		} catch (FTPDataTransferException e) {
+			error = true;
+		} catch (FTPAbortedException e) {
+			error = true;
+		}
+		
+		if(error) {
+			ft.failed();
+		}
+	}
 }

@@ -112,9 +112,9 @@ public class LiFT {
 		mnConnection.add(mntmReconnect);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[]{809, 0};
-		gridBagLayout.rowHeights = new int[]{10, 427, 177, 0};
+		gridBagLayout.rowHeights = new int[]{10, 427, 0};
 		gridBagLayout.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gridBagLayout.rowWeights = new double[]{0.0, 1.0, 0.0, 0.0};
+		gridBagLayout.rowWeights = new double[]{0.0, 1.0, 0.0};
 		frame.getContentPane().setLayout(gridBagLayout);
 		
 		JToolBar qcBar = new JToolBar();
@@ -213,21 +213,13 @@ public class LiFT {
 		gbc_connectionTabPane.gridy = 1;
 		frame.getContentPane().add(connectionTabPane, gbc_connectionTabPane);
 		
-		JPanel panel_1 = new JPanel();
-		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
-		gbc_panel_1.insets = new Insets(0, 0, 5, 0);
-		gbc_panel_1.fill = GridBagConstraints.BOTH;
-		gbc_panel_1.gridx = 0;
-		gbc_panel_1.gridy = 2;
-		frame.getContentPane().add(panel_1, gbc_panel_1);
-		
 		JToolBar toolBar_1 = new JToolBar();
 		toolBar_1.setBackground(Color.LIGHT_GRAY);
 		toolBar_1.setFloatable(false);
 		GridBagConstraints gbc_toolBar_1 = new GridBagConstraints();
 		gbc_toolBar_1.fill = GridBagConstraints.BOTH;
 		gbc_toolBar_1.gridx = 0;
-		gbc_toolBar_1.gridy = 3;
+		gbc_toolBar_1.gridy = 2;
 		gbc_toolBar_1.insets = new Insets(0, 0, 0, 0);
 		frame.getContentPane().add(toolBar_1, gbc_toolBar_1);
 		
