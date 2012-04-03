@@ -14,12 +14,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.*;
 
+import com.lift.FileTransfer.TransferType;
+
 public class Connection implements Runnable {
 	
 	public Thread thread;
 	public Tab tab;
 	private ConnectionManager cManager;
-	private FTPClient client;
+	public FTPClient client;
 	private int connId;
 	public String host;
 	public int port;
@@ -235,53 +237,80 @@ public class Connection implements Runnable {
 		}
 	}
 	
-	public void enqueueDownload(FileTransfer ft) {
-		boolean error = false;
-		try {
-			client.download(ft.remoteFile, new File(ft.localFile), ft);
-		} catch (IllegalStateException e) {
-			error = true;
-		} catch (FileNotFoundException e) {
-			error = true;
-		} catch (IOException e) {
-			error = true;
-		} catch (FTPIllegalReplyException e) {
-			error = true;
-		} catch (FTPException e) {
-			error = true;
-		} catch (FTPDataTransferException e) {
-			error = true;
-		} catch (FTPAbortedException e) {
-			error = true;
-		}
-		
-		if(error) {
-			ft.failed();
-		}
+	public void enqueueTransfer(FileTransfer ft) {
+		Thread thread = new Thread(new Upload(ft));
+		thread.start();
 	}
 	
-	public void enqueueUpload(FileTransfer ft) {
-		boolean error = false;
-		try {
-			client.upload(new File(ft.localFile), ft);
-		} catch (IllegalStateException e) {
-			error = true;
-		} catch (FileNotFoundException e) {
-			error = true;
-		} catch (IOException e) {
-			error = true;
-		} catch (FTPIllegalReplyException e) {
-			error = true;
-		} catch (FTPException e) {
-			error = true;
-		} catch (FTPDataTransferException e) {
-			error = true;
-		} catch (FTPAbortedException e) {
-			error = true;
+	public class Upload implements Runnable {
+		FileTransfer fileTransfer;
+		
+		public Upload(FileTransfer fileTransfer) {
+			this.fileTransfer = fileTransfer;
 		}
 		
-		if(error) {
-			ft.failed();
+		public void run() {
+			if(fileTransfer.type == TransferType.Download) {
+				download();
+			} else {
+				upload();
+			}
+		}
+		
+		private void download() {
+			boolean error = false;
+			boolean aborted = false;
+			try {
+				client.download(fileTransfer.remoteFile, new File(fileTransfer.localFile), fileTransfer);
+			} catch (IllegalStateException e) {
+				error = true;
+			} catch (FileNotFoundException e) {
+				error = true;
+			} catch (IOException e) {
+				error = true;
+			} catch (FTPIllegalReplyException e) {
+				error = true;
+			} catch (FTPException e) {
+				error = true;
+			} catch (FTPDataTransferException e) {
+				error = true;
+			} catch (FTPAbortedException e) {
+				aborted = true;
+			}
+			
+			if(error) {
+				fileTransfer.failed();
+			} else if(aborted) {
+				fileTransfer.aborted();
+			}
+		}
+		
+		private void upload() {
+			boolean error = false;
+			boolean aborted = false;
+			try {
+				client.upload(new File(fileTransfer.localFile), fileTransfer);
+			} catch (IllegalStateException e) {
+				error = true;
+			} catch (FileNotFoundException e) {
+				error = true;
+			} catch (IOException e) {
+				error = true;
+			} catch (FTPIllegalReplyException e) {
+				error = true;
+			} catch (FTPException e) {
+				error = true;
+			} catch (FTPDataTransferException e) {
+				error = true;
+			} catch (FTPAbortedException e) {
+				aborted = true;
+			}
+			
+			if(error) {
+				fileTransfer.failed();
+			} else if(aborted) {
+				fileTransfer.aborted();
+			}
 		}
 	}
 }

@@ -38,14 +38,6 @@ public class FileTransfer implements FTPDataTransferListener {
 		transferTable.addTransfer(this);
 	}
 	
-	public void start() {
-		if(type == TransferType.Download) {
-			connection.enqueueDownload(this);
-		} else {
-			connection.enqueueUpload(this);
-		}
-	}
-	
 	public void started() {
 		state = TransferState.Downloading;
 		transferTable.transferStateChanged(transferId);

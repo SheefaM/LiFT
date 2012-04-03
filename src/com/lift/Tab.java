@@ -1,9 +1,12 @@
 package com.lift;
 
 import it.sauronsoftware.ftp4j.FTPFile;
+import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -13,6 +16,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -30,14 +34,18 @@ import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 
 import org.jdesktop.swingx.JXTable;
 
+import com.lift.FileTransfer.TransferState;
 import com.lift.FileTransfer.TransferType;
 
 
@@ -302,6 +310,7 @@ public class Tab {
 								setLocalPath(connection.localPath);
 							} else {
 								uploadFile(selectedFile);
+								transferTable.repaint();
 							}
 						}
 					}
@@ -375,8 +384,29 @@ public class Tab {
 								setRemotePath(connection.getCwd());
 							} else {
 								downloadFile(selectedFile);
+								transferTable.repaint();
 							}
 						}
+					}
+				}
+			}
+		});
+		
+		transferTable.addMouseListener(new MouseAdapter()
+		{
+			public void mouseClicked(MouseEvent event) {
+				if(SwingUtilities.isRightMouseButton(event)) {
+					//Right click
+					int rowIndex = transferTable.rowAtPoint(event.getPoint());
+					
+					if(rowIndex == -1) {
+						//Right clicking the table
+						TransferTablePopupMenu menu = new TransferTablePopupMenu();
+						menu.show(transferTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+					} else {
+						//Right clicking an entry
+						FileTransferPopupMenu menu = new FileTransferPopupMenu(rowIndex);
+						menu.show(transferTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
 					}
 				}
 			}
@@ -395,7 +425,7 @@ public class Tab {
 				localFile,
 				remoteFile,
 				size);
-		connection.enqueueDownload(ft);
+		connection.enqueueTransfer(ft);
 	}
 	
 	public void uploadFile(File file) {
@@ -410,7 +440,7 @@ public class Tab {
 				localFile,
 				remoteFile,
 				size);
-		connection.enqueueUpload(ft);
+		connection.enqueueTransfer(ft);
 	}
 	
 	public String dirStringUp(String cwd) {
@@ -632,6 +662,98 @@ public class Tab {
 		}
 	}
 	
+	class FileTransferPopupMenu extends JPopupMenu {
+		JMenuItem removeTransfer = new JMenuItem("Remove");
+		JMenuItem abortTransfer = new JMenuItem("Abort");
+	    public FileTransferPopupMenu(int row){
+	        final int r = row;
+	        final FileTransfer ft = ((TransferTableModel)transferTable.getModel()).getTransferAtPosition(r);
+	    	removeTransfer.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					((TransferTableModel)transferTable.getModel()).removeTransfer(r);
+				}
+	        });
+	        
+	        abortTransfer.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					try {
+						connection.client.abortCurrentDataTransfer(true);
+					} catch (IOException e) {
+						/* */
+					} catch (FTPIllegalReplyException e) {
+						/* */
+					}
+				}
+	        });
+	        
+	        if(ft.state == TransferState.Downloading) {
+	        	add(abortTransfer);
+	        }
+	        
+	        if(ft.state == TransferState.Aborted || ft.state == TransferState.Failed || ft.state == TransferState.Completed) {
+	        	add(removeTransfer);
+	        }
+	    }
+	}
+	
+	class TransferTablePopupMenu extends JPopupMenu {
+		JMenuItem tabletest = new JMenuItem("TableTest");
+		JMenuItem tabletest1 = new JMenuItem("TableTest1");
+	    public TransferTablePopupMenu(){
+	        
+	    	tabletest.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Transfer Selected", "TableTest in Trasfer Table");
+				}
+	        });
+	        
+	        tabletest1.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					showDialog(false, "Transfer Selected", "TableTest in Trasfer Table");
+				}
+	        });
+	        add(tabletest);
+	        add(tabletest1);
+	    }
+	}
+	
+	public class ProgressBarRenderer implements TableCellRenderer {
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			table.repaint();
+			return (Component)value;
+		}
+	}
+	
+	public class StatusRenderer extends DefaultTableCellRenderer {
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			String status = (String)value;
+			
+			cell.setFont(new Font("", Font.BOLD, 14));
+			
+			if(status.equals("Started")) {
+				cell.setForeground(Color.YELLOW);
+			} else if(status.equals("Downloading")) {
+				cell.setForeground(Color.BLUE);
+			} else if(status.equals("Completed")) {
+				cell.setForeground(Color.GREEN);
+			} else if(status.equals("Aborted")) {
+				cell.setForeground(Color.ORANGE);
+			} else {
+				cell.setForeground(Color.RED);
+			}
+			
+			table.repaint();
+			return cell;
+		}
+	}
+	
 	public class TransferTableModel extends AbstractTableModel {
 		 
 		private HashMap<Integer, FileTransfer> transfers = new HashMap<Integer, FileTransfer>();
@@ -642,14 +764,25 @@ public class Tab {
 			this.table = table;
 		}
 		
+		public FileTransfer getTransferAtPosition(int pos) {
+			return transfers.get(positions.get(pos));
+		}
+		
+		public void removeTransfer(int pos) {
+			transfers.remove(positions.get(pos));
+			positions.remove(pos);
+		}
+		
 		private void updateTable() {
 			table.setModel(this);
+			this.table.getColumn("Progress").setCellRenderer(new ProgressBarRenderer());
+			this.table.getColumn("Status").setCellRenderer(new StatusRenderer());
+			table.repaint();
 		}
 		
 		public void addTransfer(FileTransfer ft) {
 			transfers.put(ft.transferId, ft);
 			positions.add(ft.transferId);
-			ft.start();
 			updateTable();
 		}
 		
@@ -702,6 +835,10 @@ public class Tab {
 				JProgressBar progressBar = new JProgressBar(0, transfer.maxProgress);
 				progressBar.setValue(transfer.curProgress);
 				progressBar.setStringPainted(true);
+				if(transfer.state == TransferState.Aborted || transfer.state == TransferState.Failed || transfer.state == TransferState.Completed) {
+					progressBar.setValue(transfer.maxProgress);
+					progressBar.setEnabled(false);
+				}
 				return progressBar;
 			case 1:
 				transfer = transfers.get(positions.get(rowIndex));
