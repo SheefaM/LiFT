@@ -11,7 +11,7 @@ public class FileTransfer implements FTPDataTransferListener {
 	}
 	
 	public static enum TransferState {
-		Starting, Downloading, Completed, Aborted, Failed
+		Starting, Downloading, Uploading, Completed, Aborted, Failed
 	}
 	
 	private Connection connection;
@@ -39,7 +39,11 @@ public class FileTransfer implements FTPDataTransferListener {
 	}
 	
 	public void started() {
-		state = TransferState.Downloading;
+		if(type == TransferType.Download) {
+			state = TransferState.Downloading;
+		} else {
+			state = TransferState.Uploading;
+		}
 		transferTable.transferStateChanged(transferId);
 	}
 

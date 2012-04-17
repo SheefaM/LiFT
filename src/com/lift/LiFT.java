@@ -2,6 +2,7 @@ package com.lift;
 
 import com.jgoodies.forms.layout.*;
 import com.jgoodies.forms.factories.*;
+import com.lift.Tab.FileTransferPopupMenu;
 
 import javax.lang.model.element.Element;
 import javax.swing.*;
@@ -90,26 +91,12 @@ public class LiFT {
 		JMenuItem mntmNewMenuItem = new JMenuItem("About LiFT");
 		mnNewMenu.add(mntmNewMenuItem);
 		
-		JMenuItem mntmPreferences = new JMenuItem("Preferences..");
-		mnNewMenu.add(mntmPreferences);
-		
-		JMenu mnNewMenu_1 = new JMenu("File");
-		mainMenuBar.add(mnNewMenu_1);
-		
-		JMenuItem mntmOpenliftFile = new JMenuItem("Open .lift File..");
-		mnNewMenu_1.add(mntmOpenliftFile);
-		
-		JMenu mnEdit = new JMenu("Edit");
-		mainMenuBar.add(mnEdit);
-		
 		JMenu mnConnection = new JMenu("Connection");
 		mainMenuBar.add(mnConnection);
 		
-		JMenuItem mntmNewMenuItem_1 = new JMenuItem("Reconnect");
-		mnConnection.add(mntmNewMenuItem_1);
+		JMenuItem mntmDisconnect = new JMenuItem("Disconnect");
+		mnConnection.add(mntmDisconnect);
 		
-		JMenuItem mntmReconnect = new JMenuItem("Disconnect");
-		mnConnection.add(mntmReconnect);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[]{809, 0};
 		gridBagLayout.rowHeights = new int[]{10, 427, 0};

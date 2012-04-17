@@ -51,6 +51,15 @@ public class ConnectionTabManager {
 		return index;
 	}
 	
+	public int getId(Tab tab) {
+		for(int key : tabs.keySet()) {
+			if(tab == tabs.get(key)) {
+				return key;
+			}
+		}
+		return 0;
+	}
+	
 	public void removeTab(int connId) {
 		connectionTabPane.remove(tabs.get(connId).tabPanel);
 		tabs.remove(connId);

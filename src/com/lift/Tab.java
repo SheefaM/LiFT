@@ -244,7 +244,7 @@ public class Tab {
 			}
 		});
 		
-		localTable.addMouseListener(new MouseAdapter()
+		/*localTable.addMouseListener(new MouseAdapter()
 		{
 			public void mouseClicked(MouseEvent event) {
 				if(SwingUtilities.isRightMouseButton(event)) {
@@ -390,7 +390,7 @@ public class Tab {
 					}
 				}
 			}
-		});
+		});*/
 		
 		transferTable.addMouseListener(new MouseAdapter()
 		{
@@ -401,8 +401,8 @@ public class Tab {
 					
 					if(rowIndex == -1) {
 						//Right clicking the table
-						TransferTablePopupMenu menu = new TransferTablePopupMenu();
-						menu.show(transferTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);
+						/*TransferTablePopupMenu menu = new TransferTablePopupMenu();
+						menu.show(transferTable.getComponentAt(event.getPoint()), event.getPoint().x, event.getPoint().y);*/
 					} else {
 						//Right clicking an entry
 						FileTransferPopupMenu menu = new FileTransferPopupMenu(rowIndex);
@@ -688,7 +688,7 @@ public class Tab {
 				}
 	        });
 	        
-	        if(ft.state == TransferState.Downloading) {
+	        if(ft.state == TransferState.Downloading || ft.state == TransferState.Uploading) {
 	        	add(abortTransfer);
 	        }
 	        
@@ -794,6 +794,8 @@ public class Tab {
 			FileTransfer transfer = transfers.get(transferId);
 			switch(transfer.state) {
 			case Completed:
+				updateLocalTable(connection.localPath);
+				updateRemoteTable();
 				break;
 			case Aborted:
 				break;
